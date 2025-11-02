@@ -1,15 +1,61 @@
+import { useEffect, useMemo, useState } from 'react';
 import Spline from '@splinetool/react-spline';
 import { Shield, Lock, Code, Server } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
+
+function useTyping(words, speed = 60, pause = 1200) {
+  const [index, setIndex] = useState(0);
+  const [subIndex, setSubIndex] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+  const [blink, setBlink] = useState(true);
+  const word = words[index % words.length];
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setBlink((v) => !v), 500);
+    return () => clearTimeout(timeout);
+  }, [blink]);
+
+  useEffect(() => {
+    if (!deleting && subIndex === word.length) {
+      const t = setTimeout(() => setDeleting(true), pause);
+      return () => clearTimeout(t);
+    }
+    if (deleting && subIndex === 0) {
+      setDeleting(false);
+      setIndex((i) => (i + 1) % words.length);
+      return;
+    }
+    const timeout = setTimeout(
+      () => setSubIndex((v) => v + (deleting ? -1 : 1)),
+      deleting ? speed / 2 : speed
+    );
+    return () => clearTimeout(timeout);
+  }, [subIndex, deleting, word, words, speed, pause]);
+
+  return `${word.slice(0, subIndex)}${blink ? '|' : ' '}`;
+}
 
 export default function Hero() {
+  // mouse parallax
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rotateX = useTransform(my, [0, 1], [8, -8]);
+  const rotateY = useTransform(mx, [0, 1], [-8, 8]);
+
+  const roles = useMemo(() => [
+    'Cybersecurity Specialist',
+    'Full‑Stack Developer',
+    'AppSec Engineer',
+  ], []);
+  const typed = useTyping(roles);
+
   return (
     <section id="home" className="relative isolate pt-24">
-      {/* Ambient liquid glow and HUD grid (non-blocking) */}
+      {/* Ambient neon gradients + circuit grid (non-blocking) */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[900px] w-[1400px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="absolute -bottom-40 right-1/3 h-[700px] w-[900px] rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(0deg,transparent_24%,rgba(255,255,255,0.05)_25%,rgba(255,255,255,0.05)_26%,transparent_27%),linear-gradient(90deg,transparent_24%,rgba(255,255,255,0.05)_25%,rgba(255,255,255,0.05)_26%,transparent_27%)] bg-[length:40px_40px]" />
+        <div className="absolute -top-40 left-1/2 h-[900px] w-[1400px] -translate-x-1/2 rounded-full bg-violet-500/15 blur-3xl" />
+        <div className="absolute -bottom-40 right-1/3 h-[700px] w-[900px] rounded-full bg-blue-500/15 blur-3xl" />
+        <div className="absolute inset-0 opacity-[0.18] bg-[linear-gradient(0deg,transparent_24%,rgba(255,255,255,0.05)_25%,rgba(255,255,255,0.05)_26%,transparent_27%),linear-gradient(90deg,transparent_24%,rgba(255,255,255,0.05)_25%,rgba(255,255,255,0.05)_26%,transparent_27%)] bg-[length:38px_38px]" />
       </div>
 
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
@@ -19,24 +65,26 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
-            <Shield className="h-3.5 w-3.5" />
-            Cybersecurity • Full‑Stack
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1 text-xs font-medium text-blue-300">
+            <Shield className="h-3.5 w-3.5" /> Cybersecurity • Full‑Stack
           </div>
 
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Liquid‑smooth experiences with security at the core
+            Futuristic, secure, and fluid experiences
           </h1>
+          <p className="mt-3 text-lg font-medium text-emerald-300">
+            {typed}
+          </p>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-white/70">
             I design and build immersive interfaces and resilient backends. From threat‑led architecture to pixel‑perfect UI, my work blends security and craft.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <a href="#projects" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-500/90">
+            <a href="#projects" className="inline-flex items-center gap-2 rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-500/90">
               View Projects
             </a>
-            <a href="#contact" className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
-              Contact Me
+            <a href="#about" className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
+              About Me
             </a>
           </div>
 
@@ -48,20 +96,32 @@ export default function Hero() {
           </dl>
         </motion.div>
 
-        {/* Liquid orb + HUD container */}
+        {/* 3D Spline hero with gentle parallax tilt */}
         <motion.div
-          className="relative h-[560px] w-full rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent shadow-[0_30px_120px_-20px_rgba(16,185,129,0.25)]"
+          className="relative h-[560px] w-full rounded-3xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent shadow-[0_30px_120px_-20px_rgba(99,102,241,0.35)]"
+          style={{ rotateX, rotateY }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width; // 0..1
+            const y = (e.clientY - rect.top) / rect.height; // 0..1
+            mx.set(x);
+            my.set(y);
+          }}
+          onMouseLeave={() => {
+            mx.set(0.5);
+            my.set(0.5);
+          }}
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.1 }}
         >
-          {/* 3D liquid orb */}
-          <Spline scene="https://prod.spline.design/Ao-qpnKUMOxV2eTA/scene.splinecode" style={{ width: '100%', height: '100%' }} />
+          {/* 3D animation (no negative z-index; full size) */}
+          <Spline scene="https://prod.spline.design/EF7JOSsHLk16Tlw9/scene.splinecode" style={{ width: '100%', height: '100%' }} />
 
           {/* HUD rings and gloss overlays (non-blocking) */}
           <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10" />
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
-            <div className="absolute -left-1/3 -top-1/3 h-[480px] w-[480px] rounded-full bg-emerald-400/10 blur-3xl" />
+            <div className="absolute -left-1/3 -top-1/3 h-[480px] w-[480px] rounded-full bg-violet-400/10 blur-3xl" />
             <div className="absolute -right-1/4 -bottom-1/4 h-[420px] w-[420px] rounded-full bg-blue-400/10 blur-3xl" />
             <div className="absolute inset-0 opacity-30 [mask-image:linear-gradient(to_bottom,white,transparent)]">
               <div className="absolute -inset-1 rounded-full border border-white/10" />
